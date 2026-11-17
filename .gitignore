@@ -158,7 +158,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+uploads/
 # Conda environments
 conda-meta/
 
