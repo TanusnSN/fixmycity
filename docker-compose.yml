@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: fix
+      POSTGRES_PASSWORD: fix
+      POSTGRES_DB: fixmycity
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://fix:fix@db:5432/fixmycity
+      SECRET_KEY: change-this-in-real-deployments
+    volumes:
+      - uploads:/code/uploads
+    depends_on:
+      - db
+    restart: on-failure
+
+volumes:
+  pgdata:
+  uploads:
