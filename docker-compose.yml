@@ -15,9 +15,12 @@ services:
     environment:
       DATABASE_URL: postgresql://fix:fix@db:5432/fixmycity
       SECRET_KEY: change-this-in-real-deployments
+    volumes:
+      - uploads:/code/uploads
     depends_on:
       - db
     restart: on-failure
 
 volumes:
   pgdata:
+  uploads:

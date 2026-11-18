@@ -68,6 +68,7 @@ class Complaint(SQLModel, table=True):
     status: Status = Status.SUBMITTED
     priority: Priority = Priority.LOW
     priority_score: float = 0.0
+    priority_manual: bool = False
     citizen_id: int = Field(foreign_key="user.id", index=True)
     department_id: Optional[int] = Field(default=None, foreign_key="department.id")
     # If this complaint is a duplicate, it points to the "master" complaint
