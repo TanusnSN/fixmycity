@@ -1,5 +1,31 @@
 "use strict";
 
+/* ---- Self-contained bootstrap: builds the page skeleton and styles itself, so an old
+   index.html / style.css cannot hold the new design back. ---- */
+(function bootstrap() {
+  document.querySelectorAll('link[rel="stylesheet"][href*="style.css"]').forEach((l) => l.remove());
+  const st = document.createElement("style");
+  st.id = "fmc-style";
+  st.textContent = "\n:root { --bg:#070d0c; --card:#0f1a17; --card2:#0b1412; --text:#e8f1ee; --muted:#8aa39b; --line:#1f322d; --brand:#12805a; --brand-hi:#34d399; --brand-text:#fff; --danger:#f87171; color-scheme: dark; }\n* { box-sizing: border-box; }\n[hidden] { display: none !important; }\nbody { margin:0; min-height:100vh; display:flex; flex-direction:column; color:var(--text); background: radial-gradient(1200px 600px at 20% -10%, #0f2a22 0, transparent 60%), var(--bg); font: 15px/1.55 Inter, system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif; }\nh2 { margin:0 0 14px; } h3 { margin:0 0 8px; font-size:1.05rem; }\na { color: var(--brand-hi); } small, .muted { color: var(--muted); }\nheader { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; padding:12px 24px; position:sticky; top:0; z-index:1000; background:rgba(7,13,12,.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }\nheader .brand { font-weight:800; font-size:1.2rem; color:#fff; text-decoration:none; display:flex; align-items:center; }\n.logo { display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px; background:var(--brand); margin-right:10px; font-size:1rem; }\n.accent { color: var(--brand-hi); }\nheader a.link { text-decoration:none; color:var(--muted); padding:5px 10px; border-radius:8px; }\nheader a.link:hover { color:var(--text); background:var(--card); }\nheader .spacer { flex:1; }\nmain { flex:1; width:100%; max-width:1100px; margin:0 auto; padding:22px 16px 50px; }\nfooter { border-top:1px solid var(--line); padding:14px 24px; color:var(--muted); font-size:.85rem; display:flex; flex-wrap:wrap; gap:6px 26px; justify-content:center; }\n.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }\n.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; } .grid .full { grid-column:1 / -1; }\n.stack { display:grid; gap:14px; }\n@media (max-width:700px) { .grid { grid-template-columns:1fr; } }\nlabel { display:flex; flex-direction:column; gap:6px; font-weight:600; font-size:.85rem; }\ninput, select, textarea { font:inherit; padding:11px 12px; border:1px solid #20332e; border-radius:10px; background:var(--card2); color:var(--text); width:100%; }\ninput::placeholder, textarea::placeholder { color:#4d625b; }\ninput:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline:2px solid var(--brand-hi); outline-offset:2px; }\nbutton { font:inherit; cursor:pointer; padding:10px 16px; border-radius:10px; border:1px solid var(--line); background:var(--card2); color:var(--text); }\nbutton:hover { border-color:var(--brand); }\nbutton.primary { background:var(--brand); color:var(--brand-text); border-color:var(--brand); font-weight:700; } button.primary:hover { background:#159a6c; }\nbutton.danger { color:var(--danger); border-color:#5b2b2b; } button.small { padding:4px 10px; font-size:.85rem; } button:disabled { opacity:.55; cursor:not-allowed; }\n.row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; }\n.tabs { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin:14px 0 18px; border-radius:12px; background:var(--card2); border:1px solid var(--line); }\n.tabs button { border:0; background:transparent; color:var(--muted); font-weight:600; } .tabs button.active { background:#15271f; color:#fff; }\n.hero { display:grid; grid-template-columns:1.15fr 1fr; gap:56px; align-items:center; min-height:66vh; }\n@media (max-width:900px) { .hero { grid-template-columns:1fr; gap:28px; min-height:0; } }\n.hero h1 { font-size:clamp(2.3rem,5.2vw,3.7rem); line-height:1.04; letter-spacing:-.03em; font-weight:700; margin:14px 0; }\n.hero .lead { color:var(--muted); font-size:1.05rem; max-width:480px; }\n.eyebrow { color:var(--brand-hi); font-size:.72rem; letter-spacing:.18em; font-weight:700; }\n.eyebrow::before { content:\"\"; display:inline-block; width:24px; height:1px; background:currentColor; margin-right:10px; vertical-align:middle; }\n.trust { display:flex; flex-wrap:wrap; gap:8px 20px; margin:18px 0; color:var(--muted); font-size:.85rem; }\n.helpbox { border:1px solid var(--line); background:var(--card); border-radius:12px; padding:12px 14px; display:inline-block; font-size:.9rem; }\n.auth { padding:28px; border-radius:18px; margin:0; box-shadow:0 20px 60px rgba(0,0,0,.35); } .auth h2 { margin-bottom:4px; font-size:1.5rem; }\n.map { height:320px; border-radius:12px; border:1px solid var(--line); z-index:0; } .map.tall { height:62vh; min-height:360px; }\n.leaflet-container { background:#0b1412; } .leaflet-tile-pane { filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9); }\n.leaflet-popup-content-wrapper, .leaflet-popup-tip { background:var(--card); color:var(--text); }\n.badge { display:inline-block; padding:1px 9px; border-radius:999px; font-size:.75rem; font-weight:700; color:#fff; background:var(--c,#6b7280); white-space:nowrap; }\n.flag { color:var(--danger); font-weight:700; font-size:.8rem; }\n.list-item { display:block; text-decoration:none; color:inherit; cursor:pointer; } .list-item:hover { border-color:var(--brand); }\n.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:16px; }\n.stat { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; color:var(--muted); } .stat b { display:block; font-size:1.8rem; line-height:1.1; color:var(--text); }\n.bars .bar { display:grid; grid-template-columns:140px 1fr 36px; gap:8px; align-items:center; margin:6px 0; font-size:.9rem; }\n.bars .fill { height:12px; background:var(--brand); border-radius:6px; min-width:3px; }\n.table-wrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; font-size:.92rem; }\nth, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--muted); font-weight:600; }\ntbody tr.click { cursor:pointer; } tbody tr.click:hover { background:var(--card2); }\n.filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; align-items:end; }\n.timeline { list-style:none; margin:0; padding:0 0 0 14px; border-left:3px solid var(--line); }\n.timeline li { margin:0 0 12px; padding-left:12px; position:relative; }\n.timeline li::before { content:\"\"; position:absolute; left:-22px; top:6px; width:11px; height:11px; border-radius:50%; background:var(--brand-hi); }\n.photos { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; } .photos img { height:110px; border-radius:10px; border:1px solid var(--line); }\n.match { border:1px solid var(--line); border-left:4px solid #d97706; border-radius:10px; padding:8px 12px; margin:8px 0; background:var(--card2); } .match.likely { border-left-color:var(--danger); }\n.legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; font-size:.85rem; color:var(--muted); }\n.legend i { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:4px; background:var(--c); }\n#toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#e8f1ee; color:#07120e; padding:10px 18px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:3000; max-width:90vw; }\n#toast.show { opacity:1; } #toast.err { background:#b42318; color:#fff; }\n.notice { padding:10px 12px; border-radius:10px; background:var(--card2); border:1px dashed var(--line); margin-bottom:12px; }\n\nhtml{scroll-behavior:smooth}\n.card{transition:border-color .15s,transform .15s}.list-item:hover{transform:translateY(-1px)}\n.how{margin:56px 0 10px}.how h2{text-align:center;font-size:1.6rem}\n.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}\n.step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}\n.step span{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;margin-bottom:10px}\n.step p{margin:6px 0 0;color:var(--muted);font-size:.9rem}\n.loading{display:flex;align-items:center;gap:10px;color:var(--muted);padding:40px 0;justify-content:center}\n.spin{width:18px;height:18px;border:3px solid var(--line);border-top-color:var(--brand-hi);border-radius:50%;animation:sp .8s linear infinite}\n@keyframes sp{to{transform:rotate(360deg)}}\n";
+  document.head.appendChild(st);
+  const addLink = (href) => {
+    if (document.querySelector('link[href="' + href + '"]')) return;
+    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = href; document.head.appendChild(l);
+  };
+  addLink("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+  addLink("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css");
+  document.title = "FixMyCity";
+  document.body.innerHTML = '<header id="nav"></header><main id="view" aria-live="polite"></main><footer id="foot"></footer><div id="toast" role="status"></div>';
+})();
+function ensureLeaflet() {
+  if (window.L) return Promise.resolve();
+  return new Promise((res) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    sc.onload = res; sc.onerror = res; document.head.appendChild(sc);
+  });
+}
+
 /* ---------- helpers ---------- */
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) =>
@@ -8,22 +34,31 @@ const fmt = (s) => (s ? new Date(s + "Z").toLocaleString() : "");
 const label = (s) => String(s).replace(/_/g, " ").toLowerCase().replace(/^./, (c) => c.toUpperCase());
 
 const CATS = ["ROAD", "STREETLIGHT", "WATER_LEAKAGE", "DRAINAGE", "OTHER"];
-const STATUSES = ["SUBMITTED", "VERIFIED", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REJECTED", "REOPENED"];
+const STATUSES = ["SUBMITTED", "VERIFIED", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REJECTED", "REOPENED", "WITHDRAWN"];
 const PRIOS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 const NEXT = {
   SUBMITTED: ["VERIFIED", "REJECTED"], VERIFIED: ["ASSIGNED", "REJECTED"],
   ASSIGNED: ["IN_PROGRESS", "VERIFIED"], IN_PROGRESS: ["RESOLVED", "ASSIGNED"],
-  RESOLVED: [], REJECTED: ["VERIFIED"], REOPENED: ["VERIFIED", "ASSIGNED", "IN_PROGRESS"],
+  RESOLVED: [], REJECTED: ["VERIFIED"], REOPENED: ["VERIFIED", "ASSIGNED", "IN_PROGRESS"], WITHDRAWN: [],
 };
-const SCOLOR = { SUBMITTED: "#6b7280", VERIFIED: "#2563eb", ASSIGNED: "#7c3aed", IN_PROGRESS: "#d97706", RESOLVED: "#16a34a", REJECTED: "#dc2626", REOPENED: "#db2777" };
+const SCOLOR = { SUBMITTED: "#6b7280", VERIFIED: "#2563eb", ASSIGNED: "#7c3aed", IN_PROGRESS: "#d97706", RESOLVED: "#16a34a", REJECTED: "#dc2626", REOPENED: "#db2777", WITHDRAWN: "#9ca3af" };
 const PCOLOR = { LOW: "#16a34a", MEDIUM: "#d97706", HIGH: "#ea580c", CRITICAL: "#dc2626" };
 const badge = (s) => `<span class="badge" style="--c:${SCOLOR[s]}">${label(s)}</span>`;
 const pbadge = (p) => `<span class="badge" style="--c:${PCOLOR[p]}">${label(p)}</span>`;
+const fmtHours = (h) => (h == null ? "n/a" : h < 1 ? `${Math.round(h * 60)} min` : h < 48 ? `${h.toFixed(1)} h` : `${(h / 24).toFixed(1)} days`);
 const options = (list, sel) => list.map((o) => `<option value="${o}" ${o === sel ? "selected" : ""}>${label(o)}</option>`).join("");
 
 let token = localStorage.getItem("token");
 let me = null;
 let map = null;
+const HELPLINE = { phone: "1800-000-0000", email: "support@fixmycity.example", hours: "Mon-Sat, 9 AM - 6 PM" };
+function renderFooter() {
+  const tel = HELPLINE.phone.replace(/[^+\d]/g, "");
+  $("#foot").innerHTML = `<span><b>Customer care &amp; helpline</b></span>
+    <span>&#9742; <a href="tel:${tel}">${esc(HELPLINE.phone)}</a></span>
+    <span>&#9993; <a href="mailto:${esc(HELPLINE.email)}">${esc(HELPLINE.email)}</a></span>
+    <span>${esc(HELPLINE.hours)}</span>`;
+}
 const view = () => $("#view");
 
 function toast(msg, isErr = false) {
@@ -50,7 +85,9 @@ async function api(path, opts = {}) {
     if (res.status === 401 && token && !opts.login) { logout(false); }
     let msg = data && data.detail;
     if (Array.isArray(msg)) msg = msg.map((e) => `${e.loc.slice(-1)[0]}: ${e.msg}`).join("; ");
-    throw new Error(msg || `Request failed (${res.status})`);
+    const err = new Error(msg || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
   }
   return data;
 }
@@ -81,27 +118,31 @@ function dot(c) {
 
 /* ---------- navigation ---------- */
 function renderNav() {
-  const links = [`<a class="link" href="#/map">Public map</a>`];
+  const links = [`<a class="link" href="#/map">Public Map</a>`];
   if (me && me.role === "CITIZEN") links.push(`<a class="link" href="#/report">Report</a>`, `<a class="link" href="#/mine">My complaints</a>`);
+  if (me) links.push(`<a class="link" href="#/notifications">Notifications <span id="bell"></span></a>`);
   if (me && me.role === "ADMIN") links.push(`<a class="link" href="#/admin">Dashboard</a>`, `<a class="link" href="#/admin/complaints">Complaints</a>`);
   $("#nav").innerHTML =
-    `<a class="brand" href="#/map">FixMyCity</a>${links.join("")}<span class="spacer"></span>` +
+    `<a class="brand" href="#/"><span class="logo">&#128205;</span>Fix<span class="accent">My</span>City</a><span class="spacer"></span>${links.join("")}` +
     (me
       ? `<span class="muted">${esc(me.name)} (${label(me.role)})</span><button class="small" id="logout">Log out</button>`
       : `<a class="link" href="#/login">Log in</a>`);
   const lo = $("#logout");
   if (lo) lo.onclick = () => logout();
+  refreshBell();
 }
 
 async function route() {
-  const h = location.hash.slice(1) || (me ? (me.role === "ADMIN" ? "/admin" : "/report") : "/map");
+  const h = location.hash.slice(1) || (me ? (me.role === "ADMIN" ? "/admin" : "/report") : "/login");
   const [a, b, c] = h.split("/").filter(Boolean);
   if (map) { map.remove(); map = null; }
   renderNav();
+  if (a !== "login") view().innerHTML = '<div class="loading"><span class="spin"></span>Loading...</div>';
   try {
     if (a === "login") return viewLogin();
     if (a === "map") return await viewMap();
     if (!me) return go("/login");
+    if (a === "notifications") return await viewNotifications();
     if (a === "report" && me.role === "CITIZEN") return viewReport();
     if (a === "mine" && me.role === "CITIZEN") return b ? await viewMineDetail(b) : await viewMine();
     if (a === "admin" && me.role === "ADMIN") {
@@ -117,40 +158,111 @@ async function route() {
 
 /* ---------- login / register ---------- */
 function viewLogin() {
+  const tel = HELPLINE.phone.replace(/[^+\d]/g, "");
   view().innerHTML = `
-    <div class="card" style="max-width:440px;margin:30px auto">
-      <div class="tabs"><button id="tl" class="active">Log in</button><button id="tr">Register</button></div>
-      <form id="f" class="grid" style="grid-template-columns:1fr">
-        <label id="nm" hidden>Full name<input name="name" minlength="2" maxlength="60" autocomplete="name"></label>
-        <label>Email<input name="email" type="email" required autocomplete="email"></label>
-        <label>Password<input name="password" type="password" required minlength="6" maxlength="72" autocomplete="current-password"></label>
-        <button class="primary" id="go">Log in</button>
-      </form>
-    </div>`;
-  let mode = "login";
-  const setMode = (m) => {
-    mode = m;
-    $("#tl").classList.toggle("active", m === "login");
-    $("#tr").classList.toggle("active", m === "register");
-    $("#nm").hidden = m === "login";
-    $("#go").textContent = m === "login" ? "Log in" : "Create account";
-  };
-  $("#tl").onclick = () => setMode("login");
-  $("#tr").onclick = () => setMode("register");
-  $("#f").onsubmit = async (e) => {
-    e.preventDefault();
-    const f = new FormData(e.target);
-    const email = f.get("email"), password = f.get("password");
-    try {
-      if (mode === "register") await api("/auth/register", { method: "POST", body: { name: f.get("name"), email, password } });
-      const res = await api("/auth/login", { method: "POST", login: true, body: new URLSearchParams({ username: email, password }) });
-      token = res.access_token;
-      localStorage.setItem("token", token);
-      me = await api("/auth/me");
-      toast(`Welcome, ${me.name}`);
-      go(me.role === "ADMIN" ? "/admin" : "/report");
-    } catch (err) { toast(err.message, true); }
-  };
+    <section class="hero">
+      <div class="hero-text">
+        <div class="eyebrow">CIVIC SERVICES, SIMPLIFIED</div>
+        <h1>A better city starts with <span class="accent">your voice.</span></h1>
+        <p class="lead">Report local issues, follow their progress, and help make your neighbourhood work better for everyone.</p>
+        <div class="trust"><span>&#10003; Secure &amp; private</span><span>&#10003; Email verified</span><span>&#10003; Duplicate-aware</span></div>
+        <div class="helpbox"><b>Customer care &amp; helpline</b><br>
+          <a href="tel:${tel}">${esc(HELPLINE.phone)}</a> &middot; <a href="mailto:${esc(HELPLINE.email)}">${esc(HELPLINE.email)}</a><br>
+          <small>${esc(HELPLINE.hours)}</small></div>
+      </div>
+      <div class="auth card" id="auth"></div>
+    </section>
+    <section class="how">
+      <h2>How FixMyCity works</h2>
+      <div class="steps">
+        <div class="step"><span>1</span><b>Report</b><p>Drop a pin, describe the problem and add photos.</p></div>
+        <div class="step"><span>2</span><b>Duplicates linked</b><p>Similar reports nearby are matched, so crews see one problem, not ten.</p></div>
+        <div class="step"><span>3</span><b>Authorities act</b><p>Departments are assigned and urgent issues are prioritised.</p></div>
+        <div class="step"><span>4</span><b>Track and get notified</b><p>Follow every update here and by email.</p></div>
+      </div>
+    </section>`;
+  const box = $("#auth");
+  let email = "";
+  const input = (name, text, type, attrs) => `<label>${text}<input name="${name}" type="${type}" ${attrs || ""}></label>`;
+  const pass = (name, text, ac) => input(name, text, "password", `required minlength="6" maxlength="72" autocomplete="${ac}"`);
+  const codeBox = input("code", "Verification code", "text", 'required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456"');
+  const tabs = (m) => `<div class="tabs"><button type="button" data-m="login" class="${m === "login" ? "active" : ""}">Login</button><button type="button" data-m="register" class="${m === "register" ? "active" : ""}">Register</button></div>`;
+
+  async function finish(res) {
+    token = res.access_token;
+    localStorage.setItem("token", token);
+    me = await api("/auth/me");
+    toast(`Welcome, ${me.name}`);
+    go(me.role === "ADMIN" ? "/admin" : "/report");
+  }
+  const loginWith = async (mail, password) =>
+    finish(await api("/auth/login", { method: "POST", login: true, body: new URLSearchParams({ username: mail, password }) }));
+
+  async function submit(mode, f) {
+    if (mode === "login") {
+      email = f.get("email").trim();
+      try { await loginWith(email, f.get("password")); }
+      catch (err) {
+        if (err.status === 403) {
+          await api("/auth/resend-code", { method: "POST", body: { email } }).catch(() => {});
+          return show("verify", "Your email is not verified yet. We sent you a code.");
+        }
+        throw err;
+      }
+    } else if (mode === "register") {
+      email = f.get("email").trim();
+      const user = await api("/auth/register", { method: "POST", body: { name: f.get("name"), email, password: f.get("password") } });
+      if (user.is_verified) await loginWith(email, f.get("password"));
+      else show("verify", "Account created. Check your inbox for the code.");
+    } else if (mode === "verify") {
+      await finish(await api("/auth/verify-email", { method: "POST", body: { email, code: f.get("code").trim() } }));
+    } else if (mode === "forgot") {
+      email = f.get("email").trim();
+      await api("/auth/forgot-password", { method: "POST", body: { email } });
+      show("reset", "If that email has an account, a reset code is on its way.");
+    } else if (mode === "reset") {
+      await api("/auth/reset-password", { method: "POST", body: { email, code: f.get("code").trim(), new_password: f.get("new_password") } });
+      show("login", "Password updated. Please log in.");
+    }
+  }
+
+  function show(mode, note) {
+    const nt = note ? `<div class="notice">${esc(note)}</div>` : "";
+    const views = {
+      login: `<h2>Welcome back</h2><p class="muted">Sign in to track and manage your reports.</p>${tabs("login")}${nt}
+        <form id="f" class="stack">${input("email", "Email address", "email", 'required autocomplete="email" placeholder="you@example.com"')}
+        ${pass("password", "Password", "current-password")}
+        <button class="primary">Login to your account &rarr;</button>
+        <a href="#" data-m="forgot">Forgot password?</a></form>`,
+      register: `<h2>Create your account</h2><p class="muted">Use your real email. We send a code to confirm it is yours.</p>${tabs("register")}
+        <form id="f" class="stack">${input("name", "Full name", "text", 'required minlength="2" maxlength="60" autocomplete="name"')}
+        ${input("email", "Email address", "email", 'required autocomplete="email" placeholder="you@example.com"')}
+        ${pass("password", "Password (at least 6 characters)", "new-password")}
+        <button class="primary">Create account &rarr;</button></form>`,
+      verify: `<h2>Verify your email</h2><p class="muted">Enter the 6-digit code sent to <b>${esc(email)}</b>. It is valid for 15 minutes.</p>${nt}
+        <form id="f" class="stack">${codeBox}<button class="primary">Verify and continue &rarr;</button>
+        <span><a href="#" data-m="resend">Resend code</a> &middot; <a href="#" data-m="login">Back to login</a></span></form>`,
+      forgot: `<h2>Forgot password?</h2><p class="muted">Enter your account email and we will send a reset code.</p>
+        <form id="f" class="stack">${input("email", "Email address", "email", "required")}
+        <button class="primary">Send reset code</button><a href="#" data-m="login">Back to login</a></form>`,
+      reset: `<h2>Set a new password</h2><p class="muted">Enter the code from your email and choose a new password.</p>${nt}
+        <form id="f" class="stack">${codeBox}${pass("new_password", "New password", "new-password")}
+        <button class="primary">Update password</button><a href="#" data-m="login">Back to login</a></form>`,
+    };
+    box.innerHTML = views[mode];
+    box.querySelectorAll("[data-m]").forEach((el) => (el.onclick = async (e) => {
+      e.preventDefault();
+      if (el.dataset.m === "resend") {
+        try { await api("/auth/resend-code", { method: "POST", body: { email } }); toast("If a new code was due, it has been sent"); }
+        catch (err) { toast(err.message, true); }
+      } else show(el.dataset.m);
+    }));
+    $("#f").onsubmit = async (e) => {
+      e.preventDefault();
+      try { await submit(mode, new FormData(e.target)); } catch (err) { toast(err.message, true); }
+    };
+  }
+  show("login");
 }
 
 /* ---------- public map ---------- */
@@ -268,18 +380,48 @@ function photosHtml(list) {
 
 async function viewMineDetail(id) {
   const c = await api(`/complaints/${id}`);
+  const canEdit = c.status === "SUBMITTED";
+  const canWithdraw = ["SUBMITTED", "VERIFIED", "REOPENED"].includes(c.status);
   view().innerHTML = `<p><a href="#/mine">&larr; My complaints</a></p>
     <div class="card">
       <div class="row"><h2 style="margin:0">#${c.id} ${esc(c.title)}</h2>${badge(c.status)}</div>
       <p>${esc(c.description)}</p>
       <small>${label(c.category)} &middot; reported ${fmt(c.created_at)} &middot; ${c.supporters_count} supporter(s)${c.address ? " &middot; " + esc(c.address) : ""}</small>
       ${photosHtml(c.photos)}
+      ${canEdit || canWithdraw ? `<p>${canEdit ? `<button id="edit">Edit report</button> ` : ""}${canWithdraw ? `<button id="wd" class="danger">Withdraw report</button>` : ""}</p>` : ""}
     </div>
+    <form id="ef" class="card grid" hidden>
+      <h3 class="full">Edit your report</h3>
+      <label>Title<input name="title" required minlength="5" maxlength="120" value="${esc(c.title)}"></label>
+      <label>Category<select name="category">${options(CATS, c.category)}</select></label>
+      <label class="full">Description<textarea name="description" rows="4" required minlength="10" maxlength="2000">${esc(c.description)}</textarea></label>
+      <label class="full">Address or landmark<input name="address" maxlength="255" value="${esc(c.address || "")}"></label>
+      <div class="full"><button class="primary">Save changes</button> <button type="button" id="ec">Cancel</button></div>
+    </form>
     <div class="card"><h3>Progress</h3>${timelineHtml(c.timeline)}</div>
     <div id="rp"></div>
     <div id="dmap" class="map"></div>`;
   newMap("dmap", [c.lat, c.lng], 17);
   dot(c).addTo(map);
+  if (canEdit) {
+    $("#edit").onclick = () => { $("#ef").hidden = false; $("#ef").scrollIntoView({ behavior: "smooth" }); };
+    $("#ec").onclick = () => ($("#ef").hidden = true);
+    $("#ef").onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target.elements;
+      try {
+        await api(`/complaints/${id}`, { method: "PATCH", body: { title: f.title.value, description: f.description.value, category: f.category.value, address: f.address.value } });
+        toast("Report updated"); route();
+      } catch (err) { toast(err.message, true); }
+    };
+  }
+  if (canWithdraw) {
+    $("#wd").onclick = async () => {
+      if (!confirm("Withdraw this report? It will be removed from the public map and the work queue.")) return;
+      try { await api(`/complaints/${id}/withdraw`, { method: "POST" }); toast("Report withdrawn"); go("/mine"); }
+      catch (err) { toast(err.message, true); }
+    };
+  }
   if (c.status === "RESOLVED") {
     $("#rp").innerHTML = `<form id="rof" class="card"><h3>Not actually fixed?</h3>
       <label>Tell us what is still wrong<textarea name="reason" required minlength="5" maxlength="500" rows="3"></textarea></label>
@@ -305,7 +447,7 @@ function bars(obj, colors) {
 
 async function viewDashboard() {
   const s = await api("/admin/stats");
-  view().innerHTML = `<div class="row"><h2>Dashboard</h2><button id="rc">Recalculate priorities</button></div>
+  view().innerHTML = `<div class="row"><h2>Dashboard</h2><span><button id="rc">Recalculate priorities</button> <button id="pg" class="danger">Clear old resolved records</button></span></div>
     <div class="stats">
       <div class="stat"><b>${s.total}</b>Total complaints</div>
       <div class="stat"><b>${s.open}</b>Open</div>
@@ -320,6 +462,18 @@ async function viewDashboard() {
       <div class="card"><h3>By department</h3>${bars(s.by_department)}</div>
     </div>
     <p><a href="#/admin/complaints">Open the complaints list &rarr;</a></p>`;
+  $("#pg").onclick = async () => {
+    const days = prompt("Delete resolved complaints older than how many days? (0 = all resolved)", "30");
+    if (days === null) return;
+    try {
+      const q = `/admin/purge?older_than_days=${encodeURIComponent(days)}`;
+      const preview = await api(q, { method: "DELETE" });
+      if (!preview.would_delete) return toast("Nothing to delete");
+      if (!confirm(`Permanently delete ${preview.would_delete} resolved complaint(s) with their photos and history? This cannot be undone.`)) return;
+      const r = await api(q + "&confirm=true", { method: "DELETE" });
+      toast(`Deleted ${r.deleted} complaint(s)`); route();
+    } catch (e) { toast(e.message, true); }
+  };
   $("#rc").onclick = async () => {
     try { const r = await api("/admin/recalculate", { method: "POST" }); toast(`Recalculated ${r.recalculated} complaints`); route(); }
     catch (e) { toast(e.message, true); }
@@ -425,8 +579,36 @@ async function viewAdminDetail(id) {
   };
 }
 
+/* ---------- notifications ---------- */
+async function refreshBell() {
+  const el = $("#bell");
+  if (!el || !me) return;
+  try {
+    const r = await api("/notifications/unread-count");
+    el.innerHTML = r.unread ? `<span class="badge" style="--c:#dc2626">${r.unread}</span>` : "";
+  } catch (e) { /* ignore */ }
+}
+setInterval(refreshBell, 30000);
+
+async function viewNotifications() {
+  const rows = await api("/notifications");
+  const link = (n) => !n.complaint_id ? "#/notifications"
+    : me.role === "ADMIN" ? `#/admin/complaint/${n.complaint_id}` : `#/mine/${n.complaint_id}`;
+  view().innerHTML = `<div class="row"><h2>Notifications</h2><button id="ra">Mark all as read</button></div>` +
+    (rows.length ? rows.map((n) => `<a class="card list-item" href="${link(n)}" data-read="${n.id}"
+      style="${n.is_read ? "" : "border-left:4px solid var(--brand)"}"><div class="row">
+      <span>${n.is_read ? esc(n.message) : "<b>" + esc(n.message) + "</b>"}</span><small>${fmt(n.created_at)}</small></div></a>`).join("")
+      : `<div class="card">No notifications yet.</div>`);
+  $("#ra").onclick = async () => {
+    try { await api("/notifications/read-all", { method: "POST" }); toast("All marked as read"); route(); }
+    catch (e) { toast(e.message, true); }
+  };
+}
+
 /* ---------- global click handling ---------- */
 document.addEventListener("click", async (e) => {
+  const rd = e.target.closest("[data-read]");
+  if (rd) api(`/notifications/${rd.dataset.read}/read`, { method: "POST" }).then(refreshBell).catch(() => {});
   const open = e.target.closest("[data-open]");
   if (open) return go(`/admin/complaint/${open.dataset.open}`);
   const sup = e.target.closest("[data-support]");
@@ -443,8 +625,10 @@ document.addEventListener("click", async (e) => {
 
 window.addEventListener("hashchange", route);
 (async function init() {
+  await ensureLeaflet();
   if (token) {
     try { me = await api("/auth/me"); } catch (e) { token = null; localStorage.removeItem("token"); }
   }
+  renderFooter();
   route();
 })();
