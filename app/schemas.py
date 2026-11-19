@@ -17,6 +17,7 @@ class UserRead(BaseModel):
     name: str
     email: str
     role: Role
+    is_verified: bool = False
 
 
 class Token(BaseModel):
@@ -131,3 +132,41 @@ class SimilarComplaint(BaseModel):
     confidence: float
     level: str
     supporters_count: int = 0
+
+class VerifyEmailRequest(BaseModel):
+    email: str
+    code: str = Field(min_length=6, max_length=6)
+
+
+class ResendRequest(BaseModel):
+    email: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=6, max_length=72)
+
+
+class ComplaintEdit(BaseModel):
+    title: Optional[str] = Field(None, min_length=5, max_length=120)
+    description: Optional[str] = Field(None, min_length=10, max_length=2000)
+    category: Optional[Category] = None
+    address: Optional[str] = Field(None, max_length=255)
+
+
+class AdminAdd(BaseModel):
+    email: str
+
+class NotificationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    complaint_id: Optional[int] = None
+    message: str
+    is_read: bool
+    created_at: datetime

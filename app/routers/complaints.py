@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
-
+from ..services.notifications import notify, notify_admins
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlmodel import Session, col, func, select
 
@@ -30,6 +30,7 @@ from ..schemas import (
     ReopenRequest,
     SimilarComplaint,
     StatusHistoryRead,
+    ComplaintEdit
 )
 
 router = APIRouter(prefix="/complaints", tags=["complaints"])
@@ -168,6 +169,10 @@ async def create_complaint(
         session.add(ComplaintPhoto(complaint_id=complaint.id, file_path=name))
 
     recalculate(session, complaint)
+    notify_admins(
+        session, complaint.id,
+        f"New complaint #{complaint.id}: {complaint.title} ({complaint.priority.value.title()} priority)",
+    )
     session.commit()
     session.refresh(complaint)
     return to_detail(session, complaint)
@@ -196,7 +201,7 @@ def public_complaints(
 ):
     query = select(Complaint).where(
         col(Complaint.master_complaint_id).is_(None),  # hide merged duplicates
-        Complaint.status != Status.REJECTED,
+        col(Complaint.status).not_in((Status.REJECTED, Status.WITHDRAWN)),
     )
     if status_filter:
         query = query.where(Complaint.status == status_filter)
@@ -257,7 +262,7 @@ def support_complaint(
     complaint = get_or_404(session, complaint_id)
     if complaint.citizen_id == user.id:
         raise HTTPException(400, "You reported this complaint yourself")
-    if complaint.status in (Status.RESOLVED, Status.REJECTED):
+    if complaint.status in (Status.RESOLVED, Status.REJECTED, Status.WITHDRAWN):
         raise HTTPException(400, "This complaint is already closed")
     already = session.exec(
         select(Supporter).where(
@@ -296,3 +301,56 @@ def reopen_complaint(
     session.commit()
     session.refresh(complaint)
     return to_detail(session, complaint)
+
+@router.patch("/{complaint_id}", response_model=ComplaintDetail)
+def edit_complaint(
+    complaint_id: int,
+    data: ComplaintEdit,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    c = get_or_404(session, complaint_id)
+    if c.citizen_id != user.id:
+        raise HTTPException(403, "You can only edit your own complaints")
+    if c.status != Status.SUBMITTED:
+        raise HTTPException(400, "This complaint is already being handled and can no longer be edited")
+    changes = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    if not changes:
+        raise HTTPException(400, "Nothing to update")
+    for key, value in changes.items():
+        setattr(c, key, value.strip() if isinstance(value, str) else value)
+    c.updated_at = now_naive()
+    session.add(c)
+    add_history(session, c, c.status, c.status, "Edited by the citizen", user.id)
+    recalculate(session, c)
+    notify_admins(session, c.id, f"Complaint #{c.id} was edited by the citizen.")
+    session.commit()
+    session.refresh(c)
+    return to_detail(session, c)
+
+
+@router.post("/{complaint_id}/withdraw", response_model=ComplaintDetail)
+def withdraw_complaint(
+    complaint_id: int,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    c = get_or_404(session, complaint_id)
+    if c.citizen_id != user.id:
+        raise HTTPException(403, "You can only withdraw your own complaints")
+    if c.status not in (Status.SUBMITTED, Status.VERIFIED, Status.REOPENED):
+        raise HTTPException(400, "Work has already started on this complaint, so it can't be withdrawn")
+    merged = session.exec(
+        select(func.count()).select_from(Complaint).where(Complaint.master_complaint_id == c.id)
+    ).one()
+    if merged:
+        raise HTTPException(400, "Other reports are merged into this complaint, so it can't be withdrawn. Please call the helpline.")
+    old = c.status
+    c.status = Status.WITHDRAWN
+    c.updated_at = now_naive()
+    session.add(c)
+    add_history(session, c, old, Status.WITHDRAWN, "Withdrawn by the citizen", user.id)
+    notify_admins(session, c.id, f"Complaint #{c.id} was withdrawn by the citizen.")
+    session.commit()
+    session.refresh(c)
+    return to_detail(session, c)

@@ -1,9 +1,9 @@
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Literal, Optional
-
+from ..services.notifications import notify
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, col, func, select
-
+import os
 from .. import config
 from ..auth import require_admin
 from ..database import get_session
@@ -11,9 +11,14 @@ from ..models import (
     AuditLog,
     Category,
     Complaint,
+    ComplaintPhoto,
     Department,
+    Notification,
     Priority,
+    Role,
     Status,
+    StatusHistory,
+    Supporter,
     User,
 )
 from ..schemas import (
@@ -23,6 +28,7 @@ from ..schemas import (
     DepartmentRead,
     MergeRequest,
     SimilarComplaint,
+    AdminAdd,
 )
 from ..services.duplicate import find_similar
 from ..services.priority import breakdown_for, recalculate
@@ -35,7 +41,7 @@ router = APIRouter(
     dependencies=[Depends(require_admin)],
 )
 
-CLOSED = (Status.RESOLVED, Status.REJECTED)
+CLOSED = (Status.RESOLVED, Status.REJECTED, Status.WITHDRAWN)
 
 # Which status can follow which. Citizens reopen via their own endpoint.
 ALLOWED_TRANSITIONS = {
@@ -46,6 +52,7 @@ ALLOWED_TRANSITIONS = {
     Status.RESOLVED: set(),
     Status.REJECTED: {Status.VERIFIED},
     Status.REOPENED: {Status.VERIFIED, Status.ASSIGNED, Status.IN_PROGRESS},
+    Status.WITHDRAWN: set(),
 }
 
 
@@ -108,7 +115,10 @@ def sync_duplicates(session: Session, master: Complaint, admin_id: int):
                 session, child, previous, child.status,
                 f"Updated with main complaint #{master.id}", admin_id,
             )
-
+            notify(
+                session, child.citizen_id, child.id,
+                f"Your complaint #{child.id} is now {child.status.value.replace('_', ' ').title()} (tracked with #{master.id}).",
+            )
 
 # ---------- departments ----------
 
@@ -285,7 +295,13 @@ def update_complaint(
         note = f"Assigned to {dept.name}" if new_status == Status.ASSIGNED else None
         text = " - ".join(x for x in (note, remarks) if x) or None
         add_history(session, c, old_status, new_status, text, admin.id)
+        where = f" - assigned to {dept.name}" if new_status == Status.ASSIGNED and dept else ""
+        notify(
+            session, c.citizen_id, c.id,
+            f"Your complaint #{c.id} is now {new_status.value.replace('_', ' ').title()}{where}.",
+        )
         summary.append(f"status: {old_status.value} -> {new_status.value}")
+    
 
     if auto:
         c.priority_manual = False
@@ -336,6 +352,10 @@ def merge_complaint(
     if data.remarks:
         note += f" - {data.remarks.strip()}"
     add_history(session, c, c.status, c.status, note, admin.id)
+    notify(
+        session, c.citizen_id, c.id,
+        f"Your report #{c.id} was merged with #{master.id}: the same problem was reported nearby. Both are tracked together.",
+    )
 
     session.flush()
     recalculate(session, master)
