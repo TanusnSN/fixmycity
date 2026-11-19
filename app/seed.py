@@ -62,7 +62,17 @@ def main():
         def user(name, email, pw, role=Role.CITIZEN):
             u = s.exec(select(User).where(User.email == email)).first()
             if not u:
-                u = User(name=name, email=email, hashed_password=hash_password(pw), role=role)
+                u = User(
+                    name=name,
+                    email=email,
+                    hashed_password=hash_password(pw),
+                    role=role,
+                    is_verified=True,
+                )
+                s.add(u)
+                s.flush()
+            elif not getattr(u, "is_verified", True):
+                u.is_verified = True
                 s.add(u)
                 s.flush()
             return u

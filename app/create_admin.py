@@ -24,8 +24,11 @@ def main():
             if not session.exec(select(Department).where(Department.name == name)).first():
                 session.add(Department(name=name, description=description))
 
-        if session.exec(select(User).where(User.email == email)).first():
-            print("Admin already exists")
+        existing_admin = session.exec(select(User).where(User.email == email)).first()
+        if existing_admin:
+            existing_admin.is_verified = True
+            session.add(existing_admin)
+            print("Admin already exists (ensured is_verified=True)")
         else:
             session.add(
                 User(
@@ -33,6 +36,7 @@ def main():
                     email=email,
                     hashed_password=hash_password(password),
                     role=Role.ADMIN,
+                    is_verified=True,
                 )
             )
             print(f"Admin created: {email}")

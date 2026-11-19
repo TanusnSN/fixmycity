@@ -123,7 +123,7 @@ function renderNav() {
   if (me) links.push(`<a class="link" href="#/notifications">Notifications <span id="bell"></span></a>`);
   if (me && me.role === "ADMIN") links.push(`<a class="link" href="#/admin">Dashboard</a>`, `<a class="link" href="#/admin/complaints">Complaints</a>`);
   $("#nav").innerHTML =
-    `<a class="brand" href="#/"><span class="logo">&#128205;</span>Fix<span class="accent">My</span>City</a><span class="spacer"></span>${links.join("")}` +
+    `<a class="brand" href="#/map"><span class="logo">&#128205;</span>Fix<span class="accent">My</span>City</a><span class="spacer"></span>${links.join("")}` +
     (me
       ? `<span class="muted">${esc(me.name)} (${label(me.role)})</span><button class="small" id="logout">Log out</button>`
       : `<a class="link" href="#/login">Log in</a>`);
