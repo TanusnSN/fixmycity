@@ -7,7 +7,7 @@ from app.auth import hash_password
 from app.database import get_session
 from app.main import app
 from app.models import Role, User
-
+from app import config
 
 @pytest.fixture
 def engine():
@@ -64,3 +64,7 @@ def admin_headers(client, engine):
         "/auth/login", data={"username": "admin@test.com", "password": "adminpass"}
     ).json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture(autouse=True)
+def no_email_verification(monkeypatch):
+    monkeypatch.setattr(config, "REQUIRE_EMAIL_VERIFICATION", False)

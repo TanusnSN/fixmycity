@@ -32,6 +32,7 @@ class Status(str, Enum):
     RESOLVED = "RESOLVED"
     REJECTED = "REJECTED"
     REOPENED = "REOPENED"
+    WITHDRAWN = "WITHDRAWN"
 
 
 class Priority(str, Enum):
@@ -53,6 +54,7 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     hashed_password: str
     role: Role = Role.CITIZEN
+    is_verified: bool = False
     department_id: Optional[int] = Field(default=None, foreign_key="department.id")
     created_at: NaiveDatetime = Field(default_factory=utcnow)
 
@@ -109,4 +111,21 @@ class AuditLog(SQLModel, table=True):
     entity: str
     entity_id: Optional[int] = None
     details: Optional[str] = None
+    created_at: NaiveDatetime = Field(default_factory=utcnow)
+
+class EmailCode(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    purpose: str  # "verify" or "reset"
+    code_hash: str
+    expires_at: NaiveDatetime
+    attempts: int = 0
+    created_at: NaiveDatetime = Field(default_factory=utcnow)
+
+class Notification(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    complaint_id: Optional[int] = Field(default=None, foreign_key="complaint.id")
+    message: str
+    is_read: bool = False
     created_at: NaiveDatetime = Field(default_factory=utcnow)
