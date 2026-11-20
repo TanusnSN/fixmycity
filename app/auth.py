@@ -50,6 +50,8 @@ def get_current_user(
     user = session.get(User, user_id)
     if user is None:
         raise credentials_error
+    if user.is_blocked:
+        raise HTTPException(status_code=401, detail="Your account has been blocked. Please contact the helpline.")
     return user
 
 

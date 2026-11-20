@@ -1,9 +1,9 @@
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Literal
-
+from typing import Literal, Optional
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+
 from sqlmodel import Session, col, select
 
 from .. import config
@@ -107,3 +107,50 @@ def purge_closed(
     ))
     session.commit()
     return {"would_delete": len(ids), "deleted": len(ids)}
+
+class BlockRequest(BaseModel):
+    reason: Optional[str] = Field(None, max_length=200)
+
+
+@router.get("/users")
+def list_citizens(session: Session = Depends(get_session)):
+    users = session.exec(select(User).where(User.role == Role.CITIZEN).order_by(col(User.created_at).desc())).all()
+    out = []
+    for u in users:
+        rows = session.exec(select(Complaint).where(Complaint.citizen_id == u.id)).all()
+        out.append({
+            "id": u.id, "name": u.name, "email": u.email, "phone": u.phone,
+            "is_blocked": u.is_blocked, "blocked_reason": u.blocked_reason,
+            "reports": len(rows),
+            "rejected": sum(1 for r in rows if r.status == Status.REJECTED),
+            "duplicates": sum(1 for r in rows if r.master_complaint_id is not None),
+        })
+    return out
+
+
+@router.post("/users/{user_id}/block")
+def block_user(user_id: int, data: BlockRequest, admin: User = Depends(require_admin), session: Session = Depends(get_session)):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    if user.role == Role.ADMIN:
+        raise HTTPException(400, "Admins cannot be blocked")
+    user.is_blocked = True
+    user.blocked_reason = (data.reason or "").strip() or "Misuse of the platform"
+    session.add(user)
+    session.add(AuditLog(user_id=admin.id, action="BLOCK_USER", entity="user", entity_id=user.id, details=user.blocked_reason))
+    session.commit()
+    return {"id": user.id, "is_blocked": True}
+
+
+@router.post("/users/{user_id}/unblock")
+def unblock_user(user_id: int, admin: User = Depends(require_admin), session: Session = Depends(get_session)):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    user.is_blocked = False
+    user.blocked_reason = None
+    session.add(user)
+    session.add(AuditLog(user_id=admin.id, action="UNBLOCK_USER", entity="user", entity_id=user.id, details=user.email))
+    session.commit()
+    return {"id": user.id, "is_blocked": False}

@@ -261,13 +261,8 @@ def update_complaint(
 
     # Validate the status change before touching anything
     if new_status is not None and new_status != old_status:
-        allowed = ALLOWED_TRANSITIONS[old_status]
-        if new_status not in allowed:
-            names = ", ".join(s.value for s in allowed) or "none"
-            raise HTTPException(
-                400,
-                f"Cannot move from {old_status.value} to {new_status.value}. Allowed: {names}",
-            )
+        if old_status == Status.WITHDRAWN or new_status == Status.WITHDRAWN:
+            raise HTTPException(400, "Withdrawn reports are controlled by the citizen and cannot be changed")
         if new_status == Status.ASSIGNED and dept is None:
             raise HTTPException(400, "Choose a department before assigning")
         if new_status in CLOSED and not remarks:

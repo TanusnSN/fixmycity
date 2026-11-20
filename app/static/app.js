@@ -122,6 +122,8 @@ function renderNav() {
   if (me && me.role === "CITIZEN") links.push(`<a class="link" href="#/report">Report</a>`, `<a class="link" href="#/mine">My complaints</a>`);
   if (me) links.push(`<a class="link" href="#/notifications">Notifications <span id="bell"></span></a>`);
   if (me && me.role === "ADMIN") links.push(`<a class="link" href="#/admin">Dashboard</a>`, `<a class="link" href="#/admin/complaints">Complaints</a>`);
+  if (me && me.role === "CITIZEN") links.push(`<a class="link" href="#/community">Community</a>`);
+  if (me && me.role === "ADMIN") links.push(`<a class="link" href="#/admin/users">Users</a>`);
   $("#nav").innerHTML =
     `<a class="brand" href="#/map"><span class="logo">&#128205;</span>Fix<span class="accent">My</span>City</a><span class="spacer"></span>${links.join("")}` +
     (me
@@ -143,9 +145,11 @@ async function route() {
     if (a === "map") return await viewMap();
     if (!me) return go("/login");
     if (a === "notifications") return await viewNotifications();
+    if (a === "community" && me.role === "CITIZEN") return await viewCommunity();
     if (a === "report" && me.role === "CITIZEN") return viewReport();
     if (a === "mine" && me.role === "CITIZEN") return b ? await viewMineDetail(b) : await viewMine();
     if (a === "admin" && me.role === "ADMIN") {
+      if (b === "users") return await viewAdminUsers();
       if (b === "complaints") return await viewAdminList();
       if (b === "complaint" && c) return await viewAdminDetail(c);
       return await viewDashboard();
@@ -211,7 +215,7 @@ function viewLogin() {
       }
     } else if (mode === "register") {
       email = f.get("email").trim();
-      const user = await api("/auth/register", { method: "POST", body: { name: f.get("name"), email, password: f.get("password") } });
+      const user = await api("/auth/register", { method: "POST", body: { name: f.get("name"), email, phone: f.get("phone"), password: f.get("password") } });
       if (user.is_verified) await loginWith(email, f.get("password"));
       else show("verify", "Account created. Check your inbox for the code.");
     } else if (mode === "verify") {
@@ -230,13 +234,14 @@ function viewLogin() {
     const nt = note ? `<div class="notice">${esc(note)}</div>` : "";
     const views = {
       login: `<h2>Welcome back</h2><p class="muted">Sign in to track and manage your reports.</p>${tabs("login")}${nt}
-        <form id="f" class="stack">${input("email", "Email address", "email", 'required autocomplete="email" placeholder="you@example.com"')}
+        <form id="f" class="stack">${input("email", "Email or phone number", "text", 'required autocomplete="username" placeholder="you@example.com or 9876543210"')}
         ${pass("password", "Password", "current-password")}
         <button class="primary">Login to your account &rarr;</button>
         <a href="#" data-m="forgot">Forgot password?</a></form>`,
       register: `<h2>Create your account</h2><p class="muted">Use your real email. We send a code to confirm it is yours.</p>${tabs("register")}
         <form id="f" class="stack">${input("name", "Full name", "text", 'required minlength="2" maxlength="60" autocomplete="name"')}
         ${input("email", "Email address", "email", 'required autocomplete="email" placeholder="you@example.com"')}
+        ${input("phone", "Mobile number", "tel", 'required pattern="[0-9+ ]{10,15}" autocomplete="tel" placeholder="9876543210"')}
         ${pass("password", "Password (at least 6 characters)", "new-password")}
         <button class="primary">Create account &rarr;</button></form>`,
       verify: `<h2>Verify your email</h2><p class="muted">Enter the 6-digit code sent to <b>${esc(email)}</b>. It is valid for 15 minutes.</p>${nt}
@@ -463,7 +468,7 @@ async function viewDashboard() {
     </div>
     <p><a href="#/admin/complaints">Open the complaints list &rarr;</a></p>`;
   $("#pg").onclick = async () => {
-    const days = prompt("Delete resolved complaints older than how many days? (0 = all resolved)", "30");
+    const days = prompt("Delete resolved complaints older than how many days? (0 = all resolved)", "0");
     if (days === null) return;
     try {
       const q = `/admin/purge?older_than_days=${encodeURIComponent(days)}`;
@@ -517,7 +522,7 @@ async function viewAdminDetail(id) {
     api(`/admin/complaints/${id}/duplicates`), api(`/admin/complaints/${id}/priority`)]);
   const similar = c.master_complaint_id ? [] : await api(`/admin/complaints/${id}/similar`);
   const isDup = !!c.master_complaint_id;
-  const nextOptions = [c.status, ...NEXT[c.status]];
+  const nextOptions = c.status === "WITHDRAWN" ? [c.status] : STATUSES.filter((x) => x !== "WITHDRAWN");
 
   view().innerHTML = `<p><a href="#/admin/complaints">&larr; All complaints</a></p>
     <div class="card">
@@ -632,3 +637,30 @@ window.addEventListener("hashchange", route);
   renderFooter();
   route();
 })();
+
+async function viewCommunity() {
+  const rows = (await api("/complaints/public?limit=200")).sort((a, b) => b.supporters_count - a.supporters_count);
+  view().innerHTML = `<h2>Community issues</h2><p class="muted">See problems reported around the city. If you face the same one, tap <b>I also face this</b>. More supporters means a higher priority.</p>` +
+    (rows.length ? rows.map((c) => `<div class="card"><div class="row"><b>#${c.id} ${esc(c.title)}</b>${badge(c.status)}</div>
+      <small>${label(c.category)} &middot; ${fmt(c.created_at)} &middot; ${c.supporters_count} supporter(s)</small>
+      <p><button class="small primary" data-support="${c.id}" ${c.status === "RESOLVED" ? "disabled" : ""}>&#128077; I also face this</button></p></div>`).join("")
+      : `<div class="card">No complaints yet.</div>`);
+}
+
+async function viewAdminUsers() {
+  const rows = await api("/admin/users");
+  view().innerHTML = `<h2>Citizens</h2><p class="muted">Block accounts that file fake or repeated reports. Blocked users cannot log in. Red numbers mean 3 or more.</p>
+    <div class="card table-wrap">${rows.length ? `<table><thead><tr><th>Name</th><th>Contact</th><th>Reports</th><th>Rejected</th><th>Duplicates</th><th>Status</th><th></th></tr></thead><tbody>` +
+    rows.map((u) => `<tr><td>${esc(u.name)}</td><td>${esc(u.email)}<br><small>${esc(u.phone || "")}</small></td><td>${u.reports}</td>
+      <td>${u.rejected >= 3 ? `<span class="flag">${u.rejected}</span>` : u.rejected}</td>
+      <td>${u.duplicates >= 3 ? `<span class="flag">${u.duplicates}</span>` : u.duplicates}</td>
+      <td>${u.is_blocked ? `<span class="badge" style="--c:#dc2626">Blocked</span><br><small>${esc(u.blocked_reason || "")}</small>` : `<span class="badge" style="--c:#16a34a">Active</span>`}</td>
+      <td>${u.is_blocked ? `<button class="small" data-unblock="${u.id}">Unblock</button>` : `<button class="small danger" data-block="${u.id}">Block</button>`}</td></tr>`).join("") +
+    `</tbody></table>` : `<p class="muted">No citizens yet.</p>`}</div>`;
+  const act = async (path, body, msg) => { try { await api(path, { method: "POST", body }); toast(msg); route(); } catch (e) { toast(e.message, true); } };
+  view().querySelectorAll("[data-block]").forEach((b) => (b.onclick = () => {
+    const reason = prompt("Reason for blocking (shown to the user):", "Fake or repeated reports");
+    if (reason !== null) act(`/admin/users/${b.dataset.block}/block`, { reason }, "User blocked");
+  }));
+  view().querySelectorAll("[data-unblock]").forEach((b) => (b.onclick = () => act(`/admin/users/${b.dataset.unblock}/unblock`, null, "User unblocked")));
+}

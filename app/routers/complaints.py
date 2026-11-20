@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import uuid4
 from ..services.notifications import notify, notify_admins
@@ -147,6 +147,14 @@ async def create_complaint(
     files = [p for p in (photos or []) if p.filename]
     if len(files) > config.MAX_PHOTOS:
         raise HTTPException(400, f"You can upload at most {config.MAX_PHOTOS} photos")
+    recent = session.exec(
+        select(func.count()).select_from(Complaint).where(
+            Complaint.citizen_id == user.id,
+            Complaint.created_at >= now_naive() - timedelta(hours=24),
+        )
+    ).one()
+    if recent >= config.MAX_REPORTS_PER_DAY:
+        raise HTTPException(429, f"Daily limit reached ({config.MAX_REPORTS_PER_DAY} reports per 24 hours). Please try again later or call the helpline.")
 
     # Validate everything first so a bad file doesn't leave a half-created complaint
     validated = [await validate_photo(p) for p in files]

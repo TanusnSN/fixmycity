@@ -1,9 +1,13 @@
-name: CI
+name: CI-CD
 
 on:
   push:
     branches: [main, dev]
   pull_request:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   test:
@@ -14,17 +18,21 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-      - run: pytest
+      - run: pytest -v
 
   docker:
     needs: test
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
-
+      - name: Build image
+        run: docker build -t fixmycity:ci .
+      - name: Smoke test the container
+        run: |
+          docker run -d --name app -p 8000:8000 fixmycity:ci
+          for i in $(seq 1 20); do curl -sf http://localhost:8000/ && break || sleep 2; done
+          curl -sf http://localhost:8000/
+          docker rm -f app
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: docker/login-action@v3
@@ -32,12 +40,26 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Build and push Docker image
+      - name: Publish image
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/fixmycity
-          IMAGE_NAME=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
-          docker build -t "$IMAGE_NAME:latest" .
-          if [ "${{ github.ref }}" = "refs/heads/main" ] && [ "${{ github.event_name }}" = "push" ]; then
-            docker push "$IMAGE_NAME:latest"
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=ghcr.io/$OWNER/fixmycity:latest
+          docker tag fixmycity:ci $IMAGE
+          docker push $IMAGE
+
+  deploy:
+    needs: docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      AZURE_WEBHOOK_URL: ${{ secrets.AZURE_WEBHOOK_URL }}
+    steps:
+      - name: Deploy to Azure
+        run: |
+          if [ -z "$AZURE_WEBHOOK_URL" ]; then
+            echo "AZURE_WEBHOOK_URL not set yet - skipping deploy"
+          else
+            curl -fsS -X POST "$AZURE_WEBHOOK_URL"
+            echo "Azure told to pull the new image"
           fi

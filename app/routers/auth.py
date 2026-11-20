@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import re
 import secrets
 from datetime import timedelta
 
@@ -31,12 +32,25 @@ from ..services import mailer
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def normalize_phone(raw):
+    digits = re.sub(r"\D", "", raw or "")
+    if len(digits) == 12 and digits.startswith("91"):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
+    return digits if len(digits) == 10 else None
+
+
+def _get_user(session: Session, ident: str):
+    ident = ident.strip()
+    if "@" in ident:
+        return session.exec(select(User).where(User.email == ident.lower())).first()
+    phone = normalize_phone(ident)
+    return session.exec(select(User).where(User.phone == phone)).first() if phone else None
+
+
 def _hash(user_id: int, purpose: str, code: str) -> str:
     return hashlib.sha256(f"{user_id}:{purpose}:{code}".encode()).hexdigest()
-
-
-def _get_user(session: Session, email: str):
-    return session.exec(select(User).where(User.email == email.strip().lower())).first()
 
 
 def _issue_code(session: Session, user: User, purpose: str) -> bool:
@@ -88,10 +102,20 @@ def _check_code(session: Session, user: User, purpose: str, code: str) -> None:
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register(data: UserCreate, session: Session = Depends(get_session)):
     email = data.email.strip().lower()
+    phone = None
+    if getattr(data, "phone", None):
+        phone = normalize_phone(data.phone)
+        if not phone:
+            raise HTTPException(400, "Enter a valid 10-digit mobile number")
+        existing_phone = session.exec(select(User).where(User.phone == phone)).first()
+        if existing_phone and existing_phone.email != email:
+            raise HTTPException(400, "This mobile number is already registered")
+
     user = _get_user(session, email)
     if user and user.is_verified:
         raise HTTPException(status_code=400, detail="Email already registered")
     if user:  # registered earlier but never verified: let them try again
+        user.phone = phone
         user.name = data.name.strip()
         user.hashed_password = hash_password(data.password)
     else:
@@ -101,6 +125,7 @@ def register(data: UserCreate, session: Session = Depends(get_session)):
             hashed_password=hash_password(data.password),
             role=Role.CITIZEN,  # never accept a role from the client
             is_verified=not config.REQUIRE_EMAIL_VERIFICATION,
+            phone=phone,
         )
     session.add(user)
     session.commit()
@@ -113,6 +138,15 @@ def register(data: UserCreate, session: Session = Depends(get_session)):
 @router.post("/verify-email", response_model=Token)
 def verify_email(data: VerifyEmailRequest, session: Session = Depends(get_session)):
     user = _get_user(session, data.email)
+    if getattr(data, "phone", None):
+        phone = normalize_phone(data.phone)
+        if not phone:
+            raise HTTPException(400, "Enter a valid 10-digit mobile number")
+        owner = session.exec(select(User).where(User.phone == phone)).first()
+        if owner and (not user or owner.id != user.id):
+            raise HTTPException(400, "This mobile number is already registered")
+        if user:
+            user.phone = phone
     if not user:
         raise HTTPException(400, "Incorrect code")
     if user.is_verified:
@@ -159,10 +193,12 @@ def login(
     form: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ):
-    # OAuth2 form uses the field name "username"; we treat it as the email.
+    # OAuth2 form uses the field name "username"; we treat it as the email or phone.
     user = _get_user(session, form.username)
     if not user or not verify_password(form.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
+        raise HTTPException(status_code=401, detail="Incorrect email, phone, or password")
+    if user.is_blocked:
+        raise HTTPException(status_code=423, detail=f"Your account has been blocked ({user.blocked_reason or 'misuse'}). Please contact the helpline.")
     if config.REQUIRE_EMAIL_VERIFICATION and not user.is_verified:
         raise HTTPException(status_code=403, detail="Email not verified. Enter the code we sent to your email.")
     return Token(access_token=create_access_token(user))

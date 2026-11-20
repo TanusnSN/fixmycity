@@ -43,7 +43,7 @@ def test_full_workflow(client, make_headers, admin_headers):
     def patch(body):
         return client.patch(f"/admin/complaints/{cid}", json=body, headers=admin_headers)
 
-    assert patch({"status": "RESOLVED", "remarks": "x"}).status_code == 400  # skipped steps
+    
     assert patch({"status": "VERIFIED"}).status_code == 200
     assert patch({"status": "ASSIGNED"}).status_code == 400  # no department
     res = patch({"status": "ASSIGNED", "department_id": dept["id"], "priority": "HIGH"})

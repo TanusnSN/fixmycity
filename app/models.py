@@ -55,6 +55,9 @@ class User(SQLModel, table=True):
     hashed_password: str
     role: Role = Role.CITIZEN
     is_verified: bool = False
+    phone: Optional[str] = Field(default=None, unique=True, index=True)
+    is_blocked: bool = False
+    blocked_reason: Optional[str] = None
     department_id: Optional[int] = Field(default=None, foreign_key="department.id")
     created_at: NaiveDatetime = Field(default_factory=utcnow)
 

@@ -10,6 +10,7 @@ class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=60)
     email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     password: str = Field(min_length=6, max_length=72)
+    phone: Optional[str] = Field(None, max_length=20)
 
 
 class UserRead(BaseModel):
